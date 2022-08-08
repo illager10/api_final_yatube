@@ -4,9 +4,20 @@ from django.db import models
 User = get_user_model()
 
 
+class Group(models.Model):
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return (f'Группа: "{self.title}"')
+
+
 class Post(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    group = models.ForeignKey(
+        Group, null=True, on_delete=models.CASCADE, related_name='groups')
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='posts')
     image = models.ImageField(
@@ -24,3 +35,10 @@ class Comment(models.Model):
     text = models.TextField()
     created = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='author')
+    following = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='follower')
