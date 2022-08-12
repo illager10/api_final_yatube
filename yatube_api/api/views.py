@@ -12,7 +12,7 @@ from .serializers import (
     FollowSerializer
 )
 
-from .permissions import IsAuthorPermission
+from .permissions import IsAuthorOrReadOnlyPermission
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -20,16 +20,11 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (
-        IsAuthorPermission,
+        IsAuthorOrReadOnlyPermission,
     )
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    def get_permissions(self):
-        if self.request.method in permissions.SAFE_METHODS:
-            return (permissions.AllowAny(),)
-        return super().get_permissions()
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
@@ -44,7 +39,8 @@ class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (
-        IsAuthorPermission,
+        permissions.IsAuthenticated,
+        IsAuthorOrReadOnlyPermission,
     )
     filter_backends = (filters.SearchFilter,)
     search_fields = ('user__username', 'following__username')
@@ -55,17 +51,12 @@ class FollowViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    def get_permissions(self):
-        if self.action == 'retrieve':
-            return (permissions.AllowAny(),)
-        return super().get_permissions()
-
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = (
-        IsAuthorPermission,
+        IsAuthorOrReadOnlyPermission,
     )
 
     def get_queryset(self):
@@ -75,8 +66,3 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
         serializer.save(author=self.request.user, post=post)
-
-    def get_permissions(self):
-        if self.request.method in permissions.SAFE_METHODS:
-            return (permissions.AllowAny(),)
-        return super().get_permissions()
